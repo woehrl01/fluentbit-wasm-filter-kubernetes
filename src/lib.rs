@@ -1,6 +1,6 @@
 // Import pure and fast JSON library written in Rust
 use serde_json::Value;
-// Import chrono library to handle time related operation conveniently
+
 use std::slice;
 use std::os::raw::c_char;
 use std::io::Write;
@@ -66,4 +66,27 @@ fn get_filter(container_name: &str, namespace_name: &str, pod_name: &str) -> Str
     filter_log = config["*"]["*"]["*"].as_str().unwrap_or_default();
   }
   return filter_log.to_string();
+}
+
+#[cfg(test)]
+mod tests {
+  use serde_json::json;
+  use test_case::test_case;
+
+  #[test_case("container1",  "namespace1", "pod1", "test", false  ; "when wildcard is used and log does not match")]
+  #[test_case("container1",  "namespace1", "pod1", "abc",  true  ; "when wildcard is used and log matches")]
+  #[test_case("a",           "b",          "c",    "test", false  ; "when no match is found")]
+  #[test_case("a",  "b", "c", "def",  true  ; "when exact match is found")]
+  #[test_case("a",  "b", "c", "adefg",  true  ; "when exact match is found as a substring")]
+  fn filter(container_name: &str, namespace_name: &str, pod_name: &str, log: &str, expected: bool) {
+    let v = json!({
+      "container_name": container_name,
+      "namespace_name": namespace_name,
+      "pod_name": pod_name,
+      "log": log
+    });
+
+    let is_keep = super::filter_log(&v);
+    assert_eq!(is_keep, expected);
+  }
 }

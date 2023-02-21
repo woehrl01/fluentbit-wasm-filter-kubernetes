@@ -8,3 +8,7 @@ toolchain:
 build:
 	@echo "Building..."
 	cargo build --target wasm32-unknown-unknown --release
+
+test:
+	@echo "Testing..."
+	cargo test
