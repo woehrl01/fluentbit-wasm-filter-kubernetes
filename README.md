@@ -1,25 +1,25 @@
-# Fluent Bit / filter_rust
+# Fluent Bit / Kubernetes namespace, pod, and container filter plugin
 
-This source source tree provides an example of WASM program with WASI mode mainly written in Rust.
+This is a filter plugin for Fluent Bit written in Rust. It provides filtering logs based on Kubernetes namespaces, pods, and containers.
 
 ## Prerequisites
 
-* Rust
-  * rustc 1.61.0 (fe5b13d68 2022-05-18)
-* [rustup](https://rustup.rs/) (For preparing rust compiler and toolchains)
+- Rust
+  - rustc 1.61.0 (fe5b13d68 2022-05-18)
+- [rustup](https://rustup.rs/) (For preparing rust compiler and toolchains)
 
 ## How to build
 
 Add `wasm32-unknown-unknown` target for Rust toolchain:
 
 ```console
-$ rustup target add wasm32-unknown-unknown
+$ make toolchain
 ```
 
 Then, execute _cargo build_ as follows:
 
 ```console
-$ cargo build --target wasm32-unknown-unknown --release
+$ make build
 ```
 
 Finally, `*.wasm` file will be created:

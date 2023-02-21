@@ -1,0 +1,14 @@
+{
+    "*": {
+        "*": {
+            "*": "abc",
+            "argocd-application-controller": "xyz",
+            "document-generation": "xyz"
+        }
+    },
+    "a": {
+        "b": {
+            "c": "def"
+        }
+    }
+}
