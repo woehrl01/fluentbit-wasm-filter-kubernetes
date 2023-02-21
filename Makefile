@@ -1,11 +1,10 @@
 .PHONY: build
 
-toolchain:
-	@echo "Downloading toolchain..."
+setup:
+	@echo "Setup target..."
 	rustup target add wasm32-unknown-unknown
 
-
-build:
+build: 
 	@echo "Building..."
 	cargo build --target wasm32-unknown-unknown --release
 

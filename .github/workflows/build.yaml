@@ -9,14 +9,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Cache Rust dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
 
-      - name: Build with Make
+      - name: Build
         run: |
+          make setup
           make build
 
       - name: Test
