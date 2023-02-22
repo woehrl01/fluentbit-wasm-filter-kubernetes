@@ -17,10 +17,13 @@ pub extern "C" fn rust_filter(_tag: *const c_char, _tag_len: u32, _time_sec: u32
 }
 
 fn skip_log() -> *const u8 {
+  // if we wan't to skip the log, we just return null
   return std::ptr::null();
 }
 
 fn keep_log(slice_record:  &[u8]) -> *const u8 {
+  // if we wan't to keep the log, we need to return the input how it was received
+  // we still need to return a new string, so we copy the input to a new vector
   let mut result: Vec<u8> = Vec::new();
   result.write(slice_record).expect("Unable to write to vec");
   return result.as_ptr();
@@ -50,10 +53,11 @@ fn filter_log(record: &Value) -> bool {
   let log = record["log"].as_str().unwrap();
 
   let pod_name = extract_pod_name(full_pod_name);
-  let filter_log = get_filter(container_name, namespace_name, &pod_name);
 
-  let is_match = Regex::new(&filter_log).unwrap().is_match(log);
-  return is_match;
+  return match get_filter(container_name, namespace_name, &pod_name) {
+      None => true, // no filter found, keep log
+      Some(filter) => Regex::new(&filter).unwrap().is_match(log) // filter found, keep log if it matches
+  }
 }
 
 fn get_config_file_path() -> String {
@@ -71,10 +75,10 @@ fn get_config() -> Value {
   return config;
 }
 
-fn get_filter(container_name: &str, namespace_name: &str, pod_name: &str) -> String {
+fn get_filter(container_name: &str, namespace_name: &str, pod_name: &str) -> Option<String> {
   let config: Value = get_config();
 
-  let keys = [       
+  let precedence = [       
       (container_name, namespace_name, pod_name),       
       (container_name, namespace_name, "*"),       
       (container_name, "*", pod_name),       
@@ -84,14 +88,13 @@ fn get_filter(container_name: &str, namespace_name: &str, pod_name: &str) -> Str
       ("*", namespace_name, "*"),      
       ("*", "*", "*")    
   ];
-  
-  for (container, namespace, pod) in keys.iter() {
+
+  for (container, namespace, pod) in precedence.iter() {
       if let Some(filter) = config[*container][*namespace][*pod].as_str() {
-          return filter.to_string();
+          return Some(filter.to_string());
       }
   }
-
-  return "".to_string();
+  return None;
 }
 
 #[cfg(test)]
