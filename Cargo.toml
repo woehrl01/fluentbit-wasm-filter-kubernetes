@@ -11,7 +11,7 @@ codegen-units = 1
 panic = "abort"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["staticlib"]
 
 [dependencies]
 serde = { version = "*", features = ["derive"] }
