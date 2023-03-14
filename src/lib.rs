@@ -1,5 +1,6 @@
 mod config;
 
+extern crate console_error_panic_hook;
 use config::{ConfigFileConfiguration, Configuration};
 use regex::Regex;
 use serde_json::Value;
@@ -16,6 +17,8 @@ pub extern "C" fn rust_filter(
     record: *const c_char,
     record_len: u32,
 ) -> *const u8 {
+    console_error_panic_hook::set_once();
+
     let string_record: &[u8] =
         unsafe { slice::from_raw_parts(record as *mut u8, record_len as usize) };
     let json_record: Value = serde_json::from_slice(string_record).unwrap();
