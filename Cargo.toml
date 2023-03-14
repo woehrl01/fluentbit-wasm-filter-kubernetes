@@ -5,10 +5,15 @@ edition = "2021"
 
 [profile.release]
 strip = "none"
+debug = false
+debug-assertions = false
+overflow-checks = false
 opt-level = 3
-lto = true
-codegen-units = 1
-panic = "abort"
+lto = false
+panic = 'unwind'
+incremental = false
+codegen-units = 16
+rpath = false
 
 [lib]
 crate-type = ["cdylib"]
