@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  test:
+    image: docker.io/library/custom_fb:latest
+    #image: fluent/fluent-bit:2.0.9
+    command: /fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.conf
+    volumes:
+      - ./filter.wasm:/fluent-bit/plugins/custom_filter.wasm
+      - ./test-filter.conf:/fluent-bit/etc/fluent-bit.conf
