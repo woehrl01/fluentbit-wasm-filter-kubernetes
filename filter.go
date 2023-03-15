@@ -17,6 +17,12 @@ var (
 	config_name = "fluent_bit_wasm_filter_config"
 )
 
+func logDebugOnly(msg string) {
+	if false {
+		fmt.Println(msg)
+	}
+}
+
 //export go_filter
 func go_filter(tag *uint8, tag_len uint, time_sec uint, time_nsec uint, record *uint8, record_len uint) *uint8 {
 	btag := unsafe.Slice(tag, tag_len)
@@ -33,10 +39,10 @@ func go_filter(tag *uint8, tag_len uint, time_sec uint, time_nsec uint, record *
 	isfilterlog := filterLog(entry.record, config)
 
 	if isfilterlog {
-		fmt.Println("keep log")
+		logDebugOnly("keep log")
 		return entry.keep_log()
 	} else {
-		fmt.Println("skip log")
+		logDebugOnly("skip log")
 		return entry.skip_log()
 	}
 }
@@ -76,7 +82,7 @@ func readConfig(value *fastjson.Value) ConfigFileConfiguration {
 	}
 
 	if(config.config != nil) {
-		fmt.Println("config: " + config.config.String())
+		logDebugOnly("config: " + config.config.String())
 	}
 
 	return config
@@ -128,10 +134,10 @@ func filterLog(record *fastjson.Value, configSource Configuration) bool {
 	fullPodName := extractString(record, "pod_name")
 	log := extractString(record, "log")
 
-	fmt.Println("container_name: " + string(containerName))
-	fmt.Println("namespace_name: " + string(namespaceName))
-	fmt.Println("fullPodName: " + string(fullPodName))
-	fmt.Println("log: " + string(log))
+	logDebugOnly("container_name: " + string(containerName))
+	logDebugOnly("namespace_name: " + string(namespaceName))
+	logDebugOnly("fullPodName: " + string(fullPodName))
+	logDebugOnly("log: " + string(log))
 
 	if containerName == "" || namespaceName == "" || fullPodName == "" || log == "" {
 		return true // no data, keep log
@@ -139,15 +145,15 @@ func filterLog(record *fastjson.Value, configSource Configuration) bool {
 
 	podName := extractPodName(string(fullPodName))
 
-	fmt.Println("podName: " + string(podName))
+	logDebugOnly("podName: " + string(podName))
 
 	filter := getFilter(string(containerName), string(namespaceName), podName, configSource)
 
 	if filter == nil {
-		fmt.Println("no filter found")
+		logDebugOnly("no filter found")
 		return true // no filter found, keep log
 	} else {
-		fmt.Println("filter found: " + string(*filter))
+		logDebugOnly("filter found: " + string(*filter))
 		return regexp.MustCompile(*filter).MatchString(string(log)) // filter found, keep log if it matches
 	}
 }
