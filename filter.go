@@ -154,7 +154,13 @@ func filterLog(record *fastjson.Value, configSource Configuration) bool {
 		return true // no filter found, keep log
 	} else {
 		logDebugOnly("filter found: " + string(*filter))
-		return regexp.MustCompile(*filter).MatchString(string(log)) // filter found, keep log if it matches
+
+		regex, err := regexp.Compile(*filter)
+		if err != nil {
+			fmt.Println(err)
+			return true // invalid filter, keep log
+		}
+		return regex.MatchString(string(log)) // filter found, keep log if it matches
 	}
 }
 
