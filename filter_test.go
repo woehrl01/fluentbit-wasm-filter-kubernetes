@@ -199,6 +199,12 @@ func TestGo_filter(t *testing.T){
 			time: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 			expected: []byte(`{"log":"abc\\x07"}`+string(rune(0))),
 		},
+		{
+			tag: "log with tab",
+			record: "{\"log\": \"abc\t\"}",
+			time: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			expected: []byte(`{"log":"abc\t"}`+string(rune(0))),
+		},
 	}
 
 	for _, tc := range testCases {

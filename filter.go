@@ -124,7 +124,7 @@ func fixControlCharacters(entry *fastjson.Value, key string) {
 	if log != nil {
 		logStr, err := log.StringBytes()
 		if err == nil {
-			fixedResult := regexp.MustCompile("[\x00-\x1F\x7F]").ReplaceAllStringFunc(string(logStr), func(s string) string {
+			fixedResult := regexp.MustCompile("[\x00-\x08\x7F]").ReplaceAllStringFunc(string(logStr), func(s string) string {
 				return fmt.Sprintf("\\x%02X", s[0])
 			})
 			entry.Set(key, arena.NewString(fixedResult))
