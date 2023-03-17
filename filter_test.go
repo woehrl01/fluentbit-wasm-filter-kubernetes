@@ -3,6 +3,9 @@ package main
 import (
 	"testing"
 
+	"bytes"
+	"time"
+
 	"github.com/valyala/fastjson"
 )
 
@@ -173,4 +176,41 @@ func Test_extract_pod_name(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGo_filter(t *testing.T){
+
+
+	testCases := []struct {
+		tag string
+		record string
+		time time.Time
+		expected []byte
+	}{
+		{
+			tag: "normal log",
+			record: `{"log": "abc"}`,
+			time: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			expected: []byte(`{"log":"abc"}`+string(rune(0))),
+		},
+		{
+			tag: "log with special characters",
+			record: "{\"log\": \"abc\x07\"}",
+			time: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			expected: []byte(`{"log":"abc\\x07"}`+string(rune(0))),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.tag, func(t *testing.T) {
+
+			actual := go_filter_go(tc.tag, tc.time, tc.record)
+
+			if !bytes.Equal(actual, tc.expected) {
+				t.Errorf("expected %s, got %s", tc.expected, actual)
+			}
+		
+		})
+	}
+
 }

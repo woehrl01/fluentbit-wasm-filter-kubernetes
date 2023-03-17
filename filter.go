@@ -34,16 +34,23 @@ func go_filter(tag *uint8, tag_len uint, time_sec uint, time_nsec uint, record *
 	brecord := unsafe.Slice(record, record_len)
 	now := time.Unix(int64(time_sec), int64(time_nsec))
 
-	entry, err := NewLogEntry(string(btag), now, string(brecord))
+	if result := go_filter_go(string(btag), now, string(brecord)); result != nil {
+		return &(result)[0]
+	}
+	return nil
+}
+
+func go_filter_go(tag string, time time.Time, record string) []byte {
+	entry, err := NewLogEntry(tag, time, record)
 	if err != nil {
 		fmt.Println(err)
 		return entry.keep_log()
 	}
 
 	config := readConfig(entry.record)
-	isfilterlog := filterLog(entry.record, config)
+	isKeepLog := filterLog(entry.record, config)
 
-	if isfilterlog {
+	if isKeepLog {
 		logDebugOnly("keep log")
 		return entry.keep_log()
 	} else {
@@ -75,6 +82,10 @@ func NewLogEntry(tag string, time time.Time, record string) (*log_entry, error) 
 
 func readConfig(value *fastjson.Value) ConfigFileConfiguration {
 	configStr := extractString(value, config_name);
+	if configStr == "" {
+		return ConfigFileConfiguration{}
+	}
+
 	var p fastjson.Parser
 	parsedConfig, err := p.Parse(configStr)
 	if err != nil {
@@ -93,24 +104,35 @@ func readConfig(value *fastjson.Value) ConfigFileConfiguration {
 	return config
 }
 
-func (e *log_entry) keep_log() *uint8 {
+func (e *log_entry) keep_log() []byte {
 	e.record.Del(config_name)
-	marshalled := string(e.record.MarshalTo(nil))
 
+	fixControlCharacters(e.record, "log")
+
+	rv := append(e.record.MarshalTo(nil), []byte(string(rune(0)))...)
+
+	return rv
+}
+
+func fixControlCharacters(entry *fastjson.Value, key string) {
 	//replace control characters with their hex representation
 	//we need to do this because fluent-bit does not like control characters in the resulting json
 	//The marshalling to the internal msgpack will fail with an error like this:
 	//  invalid JSON format. ret: -1, buf
-	fixedResult := regexp.MustCompile(`[\x00-\x1F\x7F]`).ReplaceAllStringFunc(marshalled, func(s string) string {
-		return fmt.Sprintf("\\x%02X", s[0])
-	})
-
-	rv := append([]byte(fixedResult), []byte(string(rune(0)))...)
-
-	return &rv[0]
+	var arena fastjson.Arena;
+	log := entry.Get(key);
+	if log != nil {
+		logStr, err := log.StringBytes()
+		if err == nil {
+			fixedResult := regexp.MustCompile("[\x00-\x1F\x7F]").ReplaceAllStringFunc(string(logStr), func(s string) string {
+				return fmt.Sprintf("\\x%02X", s[0])
+			})
+			entry.Set(key, arena.NewString(fixedResult))
+		}
+	}
 }
 
-func (e *log_entry) skip_log() *uint8 {
+func (e *log_entry) skip_log() []byte {
 	return nil
 }
 
