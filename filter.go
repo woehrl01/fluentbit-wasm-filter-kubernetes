@@ -263,19 +263,23 @@ func getFilter(containerName, namespaceName, podName string, configSource Config
 }
 
 func extractPodName(fullPodName string) string {
-	re := regexp.MustCompile(`^(.+?)-[^%-]{10}-[^%-]{5}$|^(.+?)-\d+$|^(.+?)-[^%-]{5}$`)
-
-	captures := re.FindStringSubmatch(fullPodName)
-
-	if len(captures) == 0 {
-		return fullPodName
-	} else {
-		for i := 1; i <= 3; i++ {
-			if captures[i] != "" {
-				return captures[i]
-			}
-		}
-
-		return fullPodName
+	regexDeployment := regexp.MustCompile(`^(.+?)-[^%-]{9,10}-[^%-]{5}$`)
+	captures := regexDeployment.FindStringSubmatch(fullPodName)
+	if len(captures) == 2 {
+		return captures[1]
 	}
+
+	regexStatefulSet := regexp.MustCompile(`^(.+?)-\d+$`)
+	captures = regexStatefulSet.FindStringSubmatch(fullPodName)
+	if len(captures) == 2 {
+		return captures[1]
+	}
+
+	regexDaemonSet := regexp.MustCompile(`^(.+?)-[^%-]{5}$`)
+	captures = regexDaemonSet.FindStringSubmatch(fullPodName)
+	if len(captures) == 2 {
+		return captures[1]
+	}
+
+	return fullPodName
 }

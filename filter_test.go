@@ -17,7 +17,7 @@ func Test_filterLog(t *testing.T) {
 		namespace_name string
 		pod_name string
 		log string
-		expected bool
+		isKeepLog bool
 	}{
 		{
 			name: "when wildcard is used and log does not match",
@@ -25,7 +25,7 @@ func Test_filterLog(t *testing.T) {
 			namespace_name: "namespace1",
 			pod_name: "pod1",
 			log: "test",
-			expected: false,
+			isKeepLog: false,
 		},
 		{
 			name: "when wildcard is used and log matches",
@@ -33,7 +33,7 @@ func Test_filterLog(t *testing.T) {
 			namespace_name: "namespace1",
 			pod_name: "pod1",
 			log: "abc",
-			expected: true,
+			isKeepLog: true,
 		},
 		{
 			name: "when no match is found",
@@ -41,7 +41,7 @@ func Test_filterLog(t *testing.T) {
 			namespace_name: "b",
 			pod_name: "c",
 			log: "test",
-			expected: false,
+			isKeepLog: false,
 		},
 		{
 			name: "when exact match is found",
@@ -49,7 +49,7 @@ func Test_filterLog(t *testing.T) {
 			namespace_name: "b",
 			pod_name: "c",
 			log: "def",
-			expected: true,
+			isKeepLog: true,
 		},
 		{
 			name: "when exact match is found - negative",
@@ -57,7 +57,7 @@ func Test_filterLog(t *testing.T) {
 			namespace_name: "b",
 			pod_name: "d",
 			log: "def",
-			expected: false,
+			isKeepLog: false,
 		},
 		{
 			name: "when exact match is found as a substring",
@@ -65,7 +65,7 @@ func Test_filterLog(t *testing.T) {
 			namespace_name: "b",
 			pod_name: "c",
 			log: "adefg",
-			expected: true,
+			isKeepLog: true,
 		},
 		{
 			name: "when pod name is from a deployment",
@@ -73,7 +73,7 @@ func Test_filterLog(t *testing.T) {
 			namespace_name: "b",
 			pod_name: "document-generation-6499cbb75b-65lmt",
 			log: "xyz",
-			expected: true,
+			isKeepLog: true,
 		},
 		{
 			name: "when pod name is from a statefulset",
@@ -81,7 +81,7 @@ func Test_filterLog(t *testing.T) {
 			namespace_name: "b",
 			pod_name: "argocd-application-controller-0",
 			log: "xyz",
-			expected: true,
+			isKeepLog: true,
 		},
 		{
 			name: "when pod name is invalid",
@@ -89,7 +89,15 @@ func Test_filterLog(t *testing.T) {
 			namespace_name: "b",
 			pod_name: "argocd-application-controller-d",
 			log: "xyz",
-			expected: false,
+			isKeepLog: false,
+		},
+		{
+			name: "when pattern is a regex and multiple matches",
+			container_name: "a",
+			namespace_name: "b",
+			pod_name: "e",
+			log: "Z\tinfo\tads\tIncremental push\n",
+			isKeepLog: false,
 		},
 	}
 
@@ -106,7 +114,8 @@ func Test_filterLog(t *testing.T) {
 			"a": {
 				"b": {
 					"c": {"pattern": "def", "invert": false},
-					"d": {"pattern": "def", "invert": true}
+					"d": {"pattern": "def", "invert": true},
+					"e": {"pattern":"(?m)^.*\\s(ads)\\s.*$", "invert": true}
 				}
 			}
 		}
@@ -132,8 +141,8 @@ func Test_filterLog(t *testing.T) {
 			record.Set("log", arena.NewString(tc.log))
 
 			actual := filterLog(record, configSource)
-			if actual != tc.expected {
-				t.Errorf("expected %t, got %t", tc.expected, actual)
+			if actual != tc.isKeepLog {
+				t.Errorf("expected %t, got %t", tc.isKeepLog, actual)
 			}
 		})
 	}
@@ -165,6 +174,11 @@ func Test_extract_pod_name(t *testing.T) {
 			name: "when pod name is from a job or daemonset",
 			pod_name: "worker-12438-m76v7",
 			expected: "worker-12438",
+		},
+		{
+			name: "when pod name is deployment with a single replica",
+			pod_name: "istiod-cd684dc69-dvh2s",
+			expected: "istiod",
 		},
 	}
 
