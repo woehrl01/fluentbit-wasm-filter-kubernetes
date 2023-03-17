@@ -49,6 +49,14 @@ func Test_filterLog(t *testing.T) {
 			expected: true,
 		},
 		{
+			name: "when exact match is found - negative",
+			container_name: "a",
+			namespace_name: "b",
+			pod_name: "d",
+			log: "def",
+			expected: false,
+		},
+		{
 			name: "when exact match is found as a substring",
 			container_name: "a",
 			namespace_name: "b",
@@ -83,27 +91,32 @@ func Test_filterLog(t *testing.T) {
 	}
 
 	var parser fastjson.Parser
-	config, _ := parser.Parse(`{
+	config, err := parser.Parse(`
 		{
-		  "*": {
-			  "*": {
-				  "*": "abc",
-				  "argocd-application-controller": "xyz",
-				  "document-generation": "xyz"
-			  }
-		  },
-		  "a": {
-			  "b": {
-				  "c": "def"
-			  }
-		  }
+			"*": {
+				"*": {
+					"*": "abc",
+					"argocd-application-controller": {"pattern": "xyz"},
+					"document-generation": {"pattern": "xyz"}
+				}
+			},
+			"a": {
+				"b": {
+					"c": {"pattern": "def", "invert": false},
+					"d": {"pattern": "def", "invert": true}
+				}
+			}
 		}
-	  }
 	`)
+
+	if err != nil {
+		t.Errorf("error parsing config: %v", err)
+	}
 
 	configSource := ConfigFileConfiguration{
 		config: config,
 	}
+
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -115,7 +128,10 @@ func Test_filterLog(t *testing.T) {
 			record.Set("pod_name", arena.NewString(tc.pod_name))
 			record.Set("log", arena.NewString(tc.log))
 
-			filterLog(record, configSource)
+			actual := filterLog(record, configSource)
+			if actual != tc.expected {
+				t.Errorf("expected %t, got %t", tc.expected, actual)
+			}
 		})
 	}
 }

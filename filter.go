@@ -23,6 +23,11 @@ func logDebugOnly(msg string) {
 	}
 }
 
+type filterEntry struct {
+	pattern * string;
+	invert bool;
+}
+
 //export go_filter
 func go_filter(tag *uint8, tag_len uint, time_sec uint, time_nsec uint, record *uint8, record_len uint) *uint8 {
 	btag := unsafe.Slice(tag, tag_len)
@@ -153,18 +158,24 @@ func filterLog(record *fastjson.Value, configSource Configuration) bool {
 		logDebugOnly("no filter found")
 		return true // no filter found, keep log
 	} else {
-		logDebugOnly("filter found: " + string(*filter))
+		logDebugOnly("filter found: " + string(*filter.pattern) + ", invert: " + fmt.Sprint(filter.invert))
 
-		regex, err := regexp.Compile(*filter)
+		regex, err := regexp.Compile(*filter.pattern)
 		if err != nil {
 			fmt.Println(err)
 			return true // invalid filter, keep log
 		}
-		return regex.MatchString(string(log)) // filter found, keep log if it matches
+
+		isMatch := regex.MatchString(string(log))
+		if filter.invert {
+			return !isMatch // filter found, keep log if it does not match
+		}else {
+			return isMatch // filter found, keep log if it matches
+		}
 	}
 }
 
-func getFilter(containerName, namespaceName, podName string, configSource Configuration) *string {
+func getFilter(containerName, namespaceName, podName string, configSource Configuration) *filterEntry {
 	config := configSource.GetConfig()
 
 	precedence := [][]string{
@@ -186,9 +197,32 @@ func getFilter(containerName, namespaceName, podName string, configSource Config
 			continue
 		}
 
+		complexFilter := v.Get("pattern")
+		if complexFilter != nil {
+			if filter, err := complexFilter.StringBytes(); err == nil {
+				filterStr := string(filter)
+
+				var invert bool;
+				invertEntry := v.Get("invert")
+				if invertEntry == nil {
+					invert = false
+				} else {
+					invert = invertEntry.GetBool()
+				}
+
+				return &filterEntry{
+					pattern: &filterStr,
+					invert:  invert,
+				}
+			}
+		}
+
 		if filter, err := v.StringBytes(); err == nil {
 			filterStr := string(filter)
-			return &filterStr
+			return &filterEntry{
+				pattern: &filterStr,
+				invert:  false,
+			}
 		}
 	}
 
