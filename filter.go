@@ -95,7 +95,18 @@ func readConfig(value *fastjson.Value) ConfigFileConfiguration {
 
 func (e *log_entry) keep_log() *uint8 {
 	e.record.Del(config_name)
-	rv := append(e.record.MarshalTo(nil), []byte(string(rune(0)))...)
+	marshalled := string(e.record.MarshalTo(nil))
+
+	//replace control characters with their hex representation
+	//we need to do this because fluent-bit does not like control characters in the resulting json
+	//The marshalling to the internal msgpack will fail with an error like this:
+	//  invalid JSON format. ret: -1, buf
+	fixedResult := regexp.MustCompile(`[\x00-\x1F\x7F]`).ReplaceAllStringFunc(marshalled, func(s string) string {
+		return fmt.Sprintf("\\x%02X", s[0])
+	})
+
+	rv := append([]byte(fixedResult), []byte(string(rune(0)))...)
+
 	return &rv[0]
 }
 
