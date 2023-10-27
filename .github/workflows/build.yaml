@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - uses: acifani/setup-tinygo@v1
+      - uses: acifani/setup-tinygo@v2
         with:
           tinygo-version: 0.27.0
 
