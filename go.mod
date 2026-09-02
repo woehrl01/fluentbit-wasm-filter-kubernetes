@@ -1,5 +1,5 @@
 module filter_wasm_go
 
-go 1.20
+go 1.24
 
-require github.com/valyala/fastjson v1.6.4
+require github.com/valyala/fastjson v1.6.10
